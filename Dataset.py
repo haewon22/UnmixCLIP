@@ -6,9 +6,9 @@ from pycocotools.coco import COCO
 
 class Coco14Dataset(Dataset):
     def __init__(self, root, annFile, transform=None):
-        self.coco = COCO(annFile)            
+        self.coco = COCO(annFile)
         self.root = root
-        self.ids = list(self.coco.imgs.keys())  
+        self.ids = list(self.coco.imgs.keys())
         self.transform = transform
         
         cats = self.coco.loadCats(self.coco.getCatIds())

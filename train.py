@@ -14,6 +14,8 @@ from model import UnmixCLIP, MLPProjector
 from losses import MFILoss, AsymmetricLoss
 from Dataset import Coco14Dataset
 
+from Cutout import Cutout
+
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
     level=logging.INFO
@@ -70,12 +72,10 @@ def main():
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
 
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((448, 448)),
+        Cutout(1, 16),
+        transforms.RandAugment(),
         transforms.ToTensor(),
-        transforms.Normalize(
-            mean=(0.48145466, 0.4578275, 0.40821073),
-            std=(0.26862954, 0.26130258, 0.27577711)
-        )
     ])
 
     train_dataset = Coco14Dataset("./data/train2014", "./data/annotations/instances_train2014.json", transform)

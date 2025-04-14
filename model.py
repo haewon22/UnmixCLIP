@@ -29,8 +29,8 @@ class UnmixCLIP(nn.Module):
 
     def forward(self, images):
         with torch.no_grad():
-            image_features = self.clip_model.encode_image(images) 
-            image_features = image_features[:, 0, :]
+            image_features = self.clip_model.encode_image(images)
+            # image_features = image_features[:, 0, :]
         img_proj = self.image_projector(image_features)          
         img_proj = F.normalize(img_proj, dim=-1)
         return img_proj
