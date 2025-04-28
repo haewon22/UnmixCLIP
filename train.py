@@ -37,7 +37,10 @@ def validate(model, dataloader, text_proj, asl_loss_fn, device):
     return total_loss / len(dataloader)
 
 def main():
-    device = "mps"
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    if torch.mps.is_available():
+        device = torch.device("mps")
+
     logging.info(f"🖥️  Device set to: {device}")
 
     clip_model, _ = clip.load("RN101", device=device)
