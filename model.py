@@ -15,6 +15,7 @@ class MLPProjector(nn.Module):
         self.net = nn.Sequential(*layers)
     
     def forward(self, x):
+        print(x.shape)
         return self.net(x)
 
 class UnmixCLIP(nn.Module):

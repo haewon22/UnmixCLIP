@@ -13,6 +13,8 @@ import wandb
 from model import UnmixCLIP, MLPProjector
 from losses import MFILoss, AsymmetricLoss
 from Dataset import Coco14Dataset
+from Cutout import Cutout
+from RandAugment import RandAugment
 
 logging.basicConfig(
     format="%(asctime)s | %(levelname)s | %(message)s",
@@ -45,7 +47,6 @@ def main():
         name="",
         config={
             "lr": 0.002,
-            "momentum": 0.9,
             "batch_size": 32,
             "epochs": 50,
             "text_proj": [512, 384, 256],
@@ -65,17 +66,14 @@ def main():
     optimizer = optim.SGD(
         list(model.image_projector.parameters()) + list(model.text_projector.parameters()),
         lr=0.002,
-        momentum=0.9
     )
     scheduler = torch.optim.lr_scheduler.CosineAnnealingLR(optimizer, T_max=50)
 
     transform = transforms.Compose([
-        transforms.Resize((224, 224)),
+        transforms.Resize((448, 448)),
+        Cutout(1, 448),
+        transforms.RandAugment(),
         transforms.ToTensor(),
-        transforms.Normalize(
-            mean=(0.48145466, 0.4578275, 0.40821073),
-            std=(0.26862954, 0.26130258, 0.27577711)
-        )
     ])
 
     train_dataset = Coco14Dataset("./data/train2014", "./data/annotations/instances_train2014.json", transform)
@@ -116,6 +114,7 @@ def main():
 
             optimizer.zero_grad()
 
+            # TODO : concat
             pos_text_proj = model.forward_text(pos_tokens)
             neg_text_proj = model.forward_text(neg_tokens)
             final_text_proj = F.normalize(pos_text_proj - neg_text_proj, dim=-1)
@@ -125,6 +124,7 @@ def main():
             logits = img_proj @ final_text_proj.t()
             loss_asl = asl_loss_fn(logits, targets)
             loss = loss_asl + 7e-5 * loss_mfi
+
 
             loss.backward()
             optimizer.step()
@@ -136,7 +136,7 @@ def main():
                 current_lr = scheduler.get_last_lr()[0]
                 logging.info(
                     f"Epoch {epoch+1}/{num_epochs} | Step {batch_idx+1}/{len(train_loader)} | "
-                    f"Global Step {global_step} | Loss: {loss.item():.4f} | LR: {current_lr:.6f}"
+                    f"Global Step {global_step} | Loss: {loss.item():.4f} | mfi_Loss: {loss_mfi.item():.4f} | asl_Loss: {loss_asl.item():.4f} | LR: {current_lr:.6f}"
                 )
                 wandb.log({
                     "step_loss": loss.item(),
